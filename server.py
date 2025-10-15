@@ -1,59 +1,47 @@
+import json
 import logging
 import os
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-import Worker_completed as worker # Import the worker module
+import worker # Import the worker module
 
 # Initialize Flask app and CORS
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
-app.logger.setLevel(logging.ERROR)
+app.logger.setLevel(logging.DEBUG)
+#app.logger.setLevel(logging.ERROR)
 
-# Define the route for the index page
-@app.route('/', methods=['GET'])
-def index():
-    return render_template('index.html')  # Render the index.html template
+# Define the route for querying the LLM to extract from PDF in vector store
 
-# Define the route for processing messages
-@app.route('/process-message', methods=['GET'])
-#@app.route('/process-message', methods=['POST'])
-def process_message_route():
-    #user_message = request.json['userMessage']  # Extract the user's message from the request
+@app.route('/process-purchase-order', methods=['POST'])
+def process_purchase_order():
+    if request.is_json:
+        prompt = f"""
+        Populate values from the PDF into the provided JSON formatted template.  Populate only blank JSON fields. Return the JSON as a single line. For any values expressed as metric tons (MT), convert these values into kilograms (KG) by multiplying by 1000. The JSON template is {json.dumps(request.json)}
+        """
+        app.logger.debug(f"Prompt is {prompt}")
+        bot_response = worker.process_prompt(prompt)  # Process the user's message using the worker module
+        #bot_response = "OK"
+        return bot_response,200
+    else:
+        return "Not a JSON POST request",400
 
-    #print('user_message', user_message)
+# Define the route for storing the PDF for RAG
 
-    bot_response = worker.process_prompt('')  # Process the user's message using the worker module
-    #bot_response = worker.process_prompt(user_message)  # Process the user's message using the worker module
-
-    # Return the bot's response as JSON
-    #return jsonify({
-    #    "botResponse": bot_response
-    #}), 200
-    return bot_response,200
-
-# Define the route for processing documents
-@app.route('/process-document', methods=['POST'])
-def process_document_route():
+@app.route('/process-pdf', methods=['POST'])
+def process_pdf_route():
     # Check if a file was uploaded
     if 'file' not in request.files:
-        return jsonify({
-            "botResponse": "It seems like the file was not uploaded correctly, can you try "
-                           "again. If the problem persists, try using a different file"
-        }), 400
+        return "You need to upload a PDF",400
 
     file = request.files['file']  # Extract the uploaded file from the request
-
     file_path = file.filename  # Define the path where the file will be saved
     file.save(file_path)  # Save the file
-
     worker.process_document(file_path)  # Process the document using the worker module
-
     # Return a success message as JSON
-    return jsonify({
-        "botResponse": "Thank you for providing your PDF document. I have analyzed it, so now you can ask me any "
-                       "questions regarding it!"
-    }), 200
+    return "OK",200
 
 # Run the Flask app
+
 if __name__ == "__main__":
     app.run(debug=True, port=8000, host='0.0.0.0')
