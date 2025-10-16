@@ -4,25 +4,28 @@
 
 ## Prerequisite
 
-Set up an account with [Watson AI](https://dataplatform.cloud.ibm.com/)
-
-You will need a project ID, API key, and an endpoint URL
-
-Copy `credentials.sample` to `credentials.txt` and replace the values with your own values.
+Set up a HuggingFace token at [HuggingFace](https://huggingface.co/settings/tokens)
 
 ## Installation
 
-Make a virtual environment with the same name as this repo. From the project directory root run:
+Make a virtual environment. From the project directory root run:
 
 ```
-cd ..
-# generate the virtual env
-python3 -m venv pioneer_metals_rag_api
-cd pioneer_metals_rag_api
-# activate the environment
-source bin/activate
-# install the necessary modules
-pip3 install -r requirements.txt 
+# generate the conda environment
+conda create --name rag_api
+conda activate rag_api
+conda install -c python=3.12 conda-forge flask-cors langchain langchain-community langchain-chroma langchain-huggingface pypdf
 ```
 
+## Running
+
+Save the contents:
+
+    export HUGGINGFACEHUB_API_TOKEN=$HF_TOKEN
+
+where `HF_TOKEN` is the value of the API key from HuggingFace into a file called `hf_token.sh`.
+
+Launch:
+
+    ./launch.sh
 

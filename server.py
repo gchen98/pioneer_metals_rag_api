@@ -3,7 +3,7 @@ import logging
 import os
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-import worker # Import the worker module
+import hf_worker as worker # Import the worker module
 
 # Initialize Flask app and CORS
 app = Flask(__name__)
@@ -16,12 +16,11 @@ app.logger.setLevel(logging.DEBUG)
 @app.route('/process-purchase-order', methods=['POST'])
 def process_purchase_order():
     if request.is_json:
-        prompt = f"""
-        Populate values from the PDF into the provided JSON formatted template.  Populate only blank JSON fields. Return the JSON as a single line. For any values expressed as metric tons (MT), convert these values into kilograms (KG) by multiplying by 1000. The JSON template is {json.dumps(request.json)}
-        """
-        app.logger.debug(f"Prompt is {prompt}")
-        bot_response = worker.process_prompt(prompt)  # Process the user's message using the worker module
+        #prompt_test = "What are the values of the booking number and containers?"
+        #app.logger.debug(f"Prompt is: {prompt_test}")
         #bot_response = "OK"
+        prompt_json = json.dumps(request.json)
+        bot_response = worker.get_response(prompt_json)
         return bot_response,200
     else:
         return "Not a JSON POST request",400
@@ -37,7 +36,7 @@ def process_pdf_route():
     file = request.files['file']  # Extract the uploaded file from the request
     file_path = file.filename  # Define the path where the file will be saved
     file.save(file_path)  # Save the file
-    worker.process_document(file_path)  # Process the document using the worker module
+    worker.load_document(file_path)  # Process the document using the worker module
     # Return a success message as JSON
     return "OK",200
 
