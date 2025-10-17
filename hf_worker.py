@@ -13,16 +13,24 @@ from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.documents import Document
+
+
+from doctr.io import DocumentFile
+from doctr.models import ocr_predictor
+
+
 
 DEVICE="cpu"
 
 ## Configure logging
 logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
 def init_hf():
-    global chat_model,embeddings
+    global chat_model,embeddings,ocr_model
     # load all the properties from file
     properties = {}
     with open('hf_properties.txt','r') as file:
@@ -47,12 +55,29 @@ def init_hf():
         model_kwargs={"device": DEVICE}
     )
     logger.info("Embeddings initialized with model device: %s", DEVICE)
+    ocr_model = ocr_predictor(det_arch='db_resnet50', reco_arch='crnn_vgg16_bn', pretrained=True)
+    logger.info("OCR model initialized ")
+
+
+def run_ocr(document_path):
+    # PDF
+    doc = DocumentFile.from_pdf(document_path)
+    # Analyze
+    logger.info("Launch OCR...")
+    result = ocr_model(doc)
+    logger.info(f"OCR completed on {document_path}")
+    #logger.debug(f"Contents {result.render()}")
+    document = Document(
+    page_content=result.render(), metadata={"source": document_path}
+    )
+    return [document]
 
 def load_document(document_path):
     global db,chunks
     # Load the document
-    loader = PyPDFLoader(document_path)
-    document = loader.load()
+    #loader = PyPDFLoader(document_path)
+    #document = loader.load()
+    document = run_ocr(document_path)
     logger.info("Loaded document from path: %s", document_path)
     logger.debug(f"Document {document}")
     # Split the document into chunks
@@ -116,7 +141,11 @@ def get_response(query):
 
 
 def test_module():
-    load_document("samples/PACKING_LIST_9.8.pdf")
+    #run_ocr("samples/audubon.pdf")
+    #run_ocr("samples/PACKING_LIST_9.8.pdf")
+    #exit(1)
+    load_document("samples/audubon.pdf")
+    #load_document("samples/PACKING_LIST_9.8.pdf")
     jsonstr = load_example_json('samples/example_json.txt')
     response = get_response(jsonstr)
     logger.info(f"Response: {response}")

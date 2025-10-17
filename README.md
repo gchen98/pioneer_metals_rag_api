@@ -14,7 +14,8 @@ Make a virtual environment. From the project directory root run:
 # generate the conda environment
 conda env create -f environment.yml
 conda activate rag_api
-conda install -c python=3.12 conda-forge flask-cors langchain langchain-community langchain-chroma langchain-huggingface pypdf
+# add the OCR library DocTR
+pip3 install python-doctr
 ```
 
 ## Running
